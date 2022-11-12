@@ -274,5 +274,6 @@ struct sockaddr_in create_sockaddr(char *addr, char *port){
     memset(&ret, 0, sizeof(ret));
     inet_pton(AF_INET, addr, &ret.sin_addr);
     ret.sin_port = htons((uint16_t)atoi(port));
+    ret.sin_family = AF_INET;
     return ret;
 }

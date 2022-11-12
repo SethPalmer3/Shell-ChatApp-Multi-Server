@@ -2,7 +2,6 @@
 #include "connection_handler.h"
 #include "channels.h"
 #include "helper_functions.h"
-#include "server_struc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,12 +25,12 @@ int main(int argc, char **argv){
     }
 
     // Get connected servers
-    struct sockaddr_in *cnnctd_srvrs = (struct sockaddr_in*)malloc(((argc - 3)/2) * sizeof(struct sockaddr_in));
-    struct sockaddr_in **server_list = &cnnctd_srvrs;
+    Server *srvs = (Server *)malloc(sizeof(Server) * (argc-3)/2);
+    Server **cnnct_srvrs = &srvs;
 
     for (int i = 3; i < argc; i+=2)
     {
-        inet_pton(AF_INET, argv[i], server_list[(i-3)/2]);
+        cnnct_srvrs[(i-3)/2]->addr = create_sockaddr(argv[i], argv[i+1]);
     }
     
     
@@ -49,6 +48,7 @@ int main(int argc, char **argv){
 
     memset(&client_addr, 0, sizeof(client_addr));
 
+
     if(!ch->init_socket(ch, argv[1], (uint16_t)atoi(argv[2]))){
         ch->destroy(ch);
         exit(EXIT_FAILURE);
@@ -56,7 +56,7 @@ int main(int argc, char **argv){
 
     struct request *rq;
 
-    //TODO: Have a list of adjacent servers subscribed channels
+    
 
     while (1)
     {
@@ -66,12 +66,7 @@ int main(int argc, char **argv){
         }
 
         rq = (struct request *)receive_line;
-        //TODO: see if the incoming message is a server that has a say message for a channel you have. ALso pass this message to any other servers that have the same channel. And send that message to all users in said channel
-        if ()
-        {
-            /* code */
-        }
-        
+
         switch (rq->req_type)
         {
         case REQ_LOGIN: { // Login request
@@ -83,10 +78,6 @@ int main(int argc, char **argv){
         }
             break;
         case REQ_SAY:{ // Say request
-            //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
-            //TODO: Add a random unique identifier to a say message
-            //TODO: Have a list of recent say identifiers
-            //TODO: If the say message already has a identifier and it's in the list of recent identifiers; Discard the say message and send a leave request to the sender
             struct request_say *re_say = (struct request_say *)rq;
             Channel *active_ch = find_channel(channels, num_chnnls,re_say->req_channel);
             if (active_ch == NULL)
@@ -111,12 +102,6 @@ int main(int argc, char **argv){
         }
         break;
         case REQ_JOIN: { // Join request
-            //TODO: Check if the users join channel is already in this servers list of channels. Just add that user in that channel if so
-            //TODO: If the users join channel isn't apart of this servers channel list; Send a join message to all adjacent servers
-            //TODO: If this server recieves a join request form another server and this server has that channel. Do the regular join and don't send another join message.
-            //TODO: If the incoming join message from a channel is not apart of this servers channel list, add that channel and forward the join message.
-            //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
-            //TODO: If a server hasn't sent a resubscription to a channel in two minutes that server must leave the channel in this server.
             struct request_join *re_j = (struct request_join*)rq;
             Channel *new_chnl = find_channel(channels, num_chnnls, re_j->req_channel);
             if (new_chnl == NULL)
@@ -201,6 +186,25 @@ int main(int argc, char **argv){
             }
             num_users--;
            free(usr); 
+        }break;
+        case REQ_SERV_JOIN:{
+            //TODO: Check if the users join channel is already in this servers list of channels. Just add that user in that channel if so
+            //TODO: If the users join channel isn't apart of this servers channel list; Send a join message to all adjacent servers
+            //TODO: If this server recieves a join request form another server and this server has that channel. Do the regular join and don't send another join message.
+            //TODO: If the incoming join message from a channel is not apart of this servers channel list, add that channel and forward the join message.
+            //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
+            //TODO: If a server hasn't sent a resubscription to a channel in two minutes that server must leave the channel in this server.
+
+        }break;
+        case REQ_SERV_LEAVE:{
+
+        }break;
+        case REQ_SERV_SAY:{
+            //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
+            //TODO: Add a random unique identifier to a say message
+            //TODO: Have a list of recent say identifiers
+            //TODO: If the say message already has a identifier and it's in the list of recent identifiers; Discard the say message and send a leave request to the sender
+
         }break;
 
         default:

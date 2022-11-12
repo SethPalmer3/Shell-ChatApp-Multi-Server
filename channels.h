@@ -13,6 +13,7 @@
 
 
 #define MAX_USERS 32
+#define MAX_CHANNELS 64
 
 typedef struct usr
 {
@@ -21,6 +22,10 @@ typedef struct usr
     unsigned int addresslen;
 } User;
 
+typedef struct srv{
+    struct sockaddr_in addr;
+    char sub_channels[MAX_CHANNELS][CHANNEL_MAX];
+} Server;
 
 typedef struct chnnl{
     char chnl_name[CHANNEL_MAX];
