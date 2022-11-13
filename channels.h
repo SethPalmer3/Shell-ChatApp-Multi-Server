@@ -25,6 +25,7 @@ typedef struct usr
 typedef struct srv{
     struct sockaddr_in addr;
     char sub_channels[MAX_CHANNELS][CHANNEL_MAX];
+    int num_chnnls;
 } Server;
 
 typedef struct chnnl{

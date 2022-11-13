@@ -27,12 +27,12 @@ int main(int argc, char **argv){
     // Get connected servers
     Server *srvs = (Server *)malloc(sizeof(Server) * (argc-3)/2);
     Server **cnnct_srvrs = &srvs;
-
+    int num_servers = (argc-3)/2;
     for (int i = 3; i < argc; i+=2) // Set up adjactent servers
     {
         cnnct_srvrs[(i-3)/2]->addr = create_sockaddr(argv[i], argv[i+1]);
-        printf("%d\n", htons(cnnct_srvrs[(i-3)/2]->addr.sin_port));
         memset(cnnct_srvrs[(i-3)/2]->sub_channels, 0, MAX_CHANNELS * CHANNEL_MAX *sizeof(char));
+        cnnct_srvrs[(i-3)/2]->num_chnnls = 0;
     }
     
     
@@ -86,7 +86,7 @@ int main(int argc, char **argv){
             }
             
             for (int i = 0; i < active_ch->num_users; i++)
-            {
+            {//send message to all users
                 struct text_say ts;
                 memset(&ts, 0, sizeof(ts));
                 ts.txt_type = TXT_SAY;
@@ -98,6 +98,7 @@ int main(int argc, char **argv){
                 ch->socket_send(ch, (void*)&ts, sizeof(ts), &(active_ch->connected_users[i]->address));
                 
             }
+            //TODO: Add message forwarding 
         }
         break;
         case REQ_JOIN: { // Join request
@@ -106,10 +107,18 @@ int main(int argc, char **argv){
             if (new_chnl == NULL)
             {
                 //TODO: If the users join channel isn't apart of this servers channel list; Send a join message to all adjacent servers
+                struct request_join_s2s rjs = s2s_fill_join(re_j->req_channel);
+                for (int i = 0; i < num_servers; i++)
+                {
+                    if (find_channel(cnnct_srvrs[i]->sub_channels, cnnct_srvrs[i]->num_chnnls, re_j->req_channel))
+                    {
+                        ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr));
+                    }
+                }
+                
                 new_chnl = add_chnl(channels, &num_chnnls, re_j->req_channel);
                 printf("Created a new channel %s\n", new_chnl->chnl_name);
             }
-            //TODO: Check if the users join channel is already in this servers list of channels. Just add that user in that channel if so
             User *usr = find_user(all_users, num_users, client_addr, NULL); // Get user
             new_chnl->add_user(new_chnl, usr); // Add user to channel
         }break;

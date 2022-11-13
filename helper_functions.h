@@ -64,4 +64,30 @@ struct text_error fill_error(char *chnl_name);
  * @return a sockaddr_in structure filled with the relavent information
 */
 struct sockaddr_in create_sockaddr(char *address, char *port);
+
+/**
+ * Fill a server to server say request with appropriate data
+ * @param channel the name of the channel that this message should be shown in
+ * @param username the username of the user that sent the message
+ * @param text what the message actually said
+ * @return a server to server say request with all data added
+*/
+request_say_s2s s2s_fill_say(char *channel, char *username, char *text);
+
+/**
+ * Fill a server to server join request with appropriate data
+ * @param channel the channel name that this server wants to join
+ * @return a filled server to server join request
+*/
+request_join_s2s s2s_fill_join(char *channel);
+
+/**
+ * Search and compare to find a channel in a channel list
+ * @param channel_list the list of subscribed channels
+ * @param list_len the size of the channel list
+ * @param channel the name of the channel being looked for
+ * @return 1 if the channel is in the channel list, 0 otherwise
+*/
+int find_channel(char **channel_list, int list_len, char *channel);
+
 #endif

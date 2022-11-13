@@ -277,3 +277,33 @@ struct sockaddr_in create_sockaddr(char *addr, char *port){
     ret.sin_family = AF_INET;
     return ret;
 }
+
+struct request_say_s2s s2s_fill_say(char *channel, char *username, char *text){
+    struct request_say_s2s rss;
+    memset(&rss, 0, sizeof(rss));
+    rss.req_type = REQ_SERV_SAY;
+    strcpy(rss.req_channel, channel);
+    strcpy(rss.req_username, username);
+    strcpy(rss.req_text, text);
+    return rss;
+}
+
+struct request_join_s2s s2s_fill_join(char *channel){
+    struct request_join_s2s rjs;
+    memset(&rjs, 0, sizeof(rjs));
+    rjs.req_type = REQ_SERV_JOIN;
+    strcpy(rjs.req_channel, channel);
+    return rjs;
+}
+
+int find_channel(char **channel_list, int list_len, char *channel){
+    for (int i = 0; i < list_len; i++)
+    {
+        if (strcmp(channel_list[i], channel) == 0)
+        {
+            return 1;
+        }
+        
+    }
+    return 0;
+}

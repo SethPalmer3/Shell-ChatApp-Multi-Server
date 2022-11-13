@@ -63,6 +63,11 @@ struct request_join {
         char req_channel[CHANNEL_MAX]; 
 } packed;
 
+struct request_join_s2s{
+        request_t req_type;
+        char req_channel[CHANNEL_MAX];
+} packed;
+
 struct request_leave {
         request_t req_type; /* = REQ_LEAVE */
         char req_channel[CHANNEL_MAX]; 
@@ -71,6 +76,14 @@ struct request_leave {
 struct request_say {
         request_t req_type; /* = REQ_SAY */
         char req_channel[CHANNEL_MAX]; 
+        char req_text[SAY_MAX];
+} packed;
+
+struct request_say_s2s {
+        request_t req_type;
+        signed long int id;
+        char req_username[USERNAME_MAX];
+        char req_channel[CHANNEL_MAX];
         char req_text[SAY_MAX];
 } packed;
 
