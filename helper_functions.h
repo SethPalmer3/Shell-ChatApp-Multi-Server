@@ -88,6 +88,6 @@ request_join_s2s s2s_fill_join(char *channel);
  * @param channel the name of the channel being looked for
  * @return 1 if the channel is in the channel list, 0 otherwise
 */
-int find_channel(char **channel_list, int list_len, char *channel);
+int find_channel(char channel_list[][CHANNEL_MAX], int list_len, char *channel);
 
 #endif

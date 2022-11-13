@@ -296,7 +296,7 @@ struct request_join_s2s s2s_fill_join(char *channel){
     return rjs;
 }
 
-int find_channel(char **channel_list, int list_len, char *channel){
+int find_channel(char channel_list[][CHANNEL_MAX], int list_len, char *channel){
     for (int i = 0; i < list_len; i++)
     {
         if (strcmp(channel_list[i], channel) == 0)
