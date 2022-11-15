@@ -72,22 +72,30 @@ struct sockaddr_in create_sockaddr(char *address, char *port);
  * @param text what the message actually said
  * @return a server to server say request with all data added
 */
-request_say_s2s s2s_fill_say(char *channel, char *username, char *text);
+struct request_say_s2s s2s_fill_say(char *channel, char *username, char *text);
 
 /**
  * Fill a server to server join request with appropriate data
  * @param channel the channel name that this server wants to join
  * @return a filled server to server join request
 */
-request_join_s2s s2s_fill_join(char *channel);
+struct request_join_s2s s2s_fill_join(char *channel);
 
 /**
- * Search and compare to find a channel in a channel list
+ * Finds whether the inputted server is subscribed to the named channel
  * @param channel_list the list of subscribed channels
- * @param list_len the size of the channel list
  * @param channel the name of the channel being looked for
- * @return 1 if the channel is in the channel list, 0 otherwise
+ * @return -1 if channel name was not found, >= 0 otherwise
 */
-int find_channel(char channel_list[][CHANNEL_MAX], int list_len, char *channel);
+int find_channel_server(Server *srvr, char *channel);
+
+/**
+ * Finds a server in a server list by the servers address(comparse address and port only)
+ * @param srvr_list the list of servers
+ * @param list_len the size of the server list
+ * @param addr the address to look for
+ * @return the server with the matching address
+*/
+Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in addr);
 
 #endif

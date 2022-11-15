@@ -32,9 +32,9 @@ int main(int argc, char **argv){
     {
         cnnct_srvrs[(i-3)/2]->addr = create_sockaddr(argv[i], argv[i+1]);
         memset(cnnct_srvrs[(i-3)/2]->sub_channels, 0, MAX_CHANNELS * CHANNEL_MAX *sizeof(char));
-        cnnct_srvrs[(i-3)/2]->num_chnnls = 0;
+        strcpy(cnnct_srvrs[(i-3)/2]->sub_channels[0], "Common");
+        cnnct_srvrs[(i-3)/2]->num_chnnls = 1;
     }
-    
     
     struct sockaddr_in client_addr;
     unsigned int client_addrlen = sizeof(client_addr);
@@ -102,6 +102,7 @@ int main(int argc, char **argv){
         }
         break;
         case REQ_JOIN: { // Join request
+            printf("received a join request\n");
             struct request_join *re_j = (struct request_join*)rq;
             Channel *new_chnl = find_channel(channels, num_chnnls, re_j->req_channel);
             if (new_chnl == NULL)
@@ -110,9 +111,8 @@ int main(int argc, char **argv){
                 struct request_join_s2s rjs = s2s_fill_join(re_j->req_channel);
                 for (int i = 0; i < num_servers; i++)
                 {
-                    if (find_channel(cnnct_srvrs[i]->sub_channels, cnnct_srvrs[i]->num_chnnls, re_j->req_channel))
-                    {
-                        ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr));
+                    if(ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr)) <= 0){
+                        printf("Could not send user send to server\n");
                     }
                 }
                 
@@ -198,7 +198,9 @@ int main(int argc, char **argv){
            free(usr); 
         }break;
         case REQ_SERV_JOIN:{
+            //struct request_join_s2s * rjs = (struct request_join_s2s *)rq;
             //TODO: If this server recieves a join request form another server and this server has that channel. Do the regular join and don't send another join message.
+            
             //TODO: If the incoming join message from a channel is not apart of this servers channel list, add that channel and forward the join message.
             //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
             //TODO: If a server hasn't sent a resubscription to a channel in two minutes that server must leave the channel in this server.
@@ -208,7 +210,18 @@ int main(int argc, char **argv){
 
         }break;
         case REQ_SERV_SAY:{
+            struct request_say_s2s *sss = (struct request_say_s2s*)rq;
+            int subbed;
             //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
+            for (int i = 0; i < num_servers; i++)
+            {
+                if ((subbed = find_channel_server(cnnct_srvrs[i], sss->req_channel)) >= 0)
+                {
+                    ch->socket_send(ch, rq, sizeof(*sss), &(cnnct_srvrs[subbed]->addr));
+                }
+                
+            }
+            
             //TODO: Add a random unique identifier to a say message
             //TODO: Have a list of recent say identifiers
             //TODO: If the say message already has a identifier and it's in the list of recent identifiers; Discard the say message and send a leave request to the sender
