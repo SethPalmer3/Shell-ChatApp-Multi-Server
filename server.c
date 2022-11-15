@@ -99,6 +99,15 @@ int main(int argc, char **argv){
                 
             }
             //TODO: Add message forwarding 
+            User * usr = find_user(all_users, num_users, client_addr, NULL); // Get the username
+            struct request_say_s2s rss = s2s_fill_say(re_say->req_channel, usr->username, re_say->req_text); // Fill s2s data
+            for (int i = 0; i < num_servers; i++)
+            {
+                if(find_channel_server(cnnct_srvrs[i], re_say->req_channel) >= 0){
+                    ch->socket_send(ch, (void*)&rss, sizeof(rss), &(cnnct_srvrs[i]->addr));
+                }
+            }
+            
         }
         break;
         case REQ_JOIN: { // Join request
@@ -212,15 +221,16 @@ int main(int argc, char **argv){
         case REQ_SERV_SAY:{
             struct request_say_s2s *sss = (struct request_say_s2s*)rq;
             int subbed;
-            //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
-            for (int i = 0; i < num_servers; i++)
+            struct text_say ts = fill_text_say(sss->req_channel, sss->req_username, sss->req_text);
+            Channel *active = find_channel(channels, num_chnnls, sss->req_channel);
+            for (int i = 0; i < active->num_users; i++)
             {
                 if ((subbed = find_channel_server(cnnct_srvrs[i], sss->req_channel)) >= 0)
                 {
-                    ch->socket_send(ch, rq, sizeof(*sss), &(cnnct_srvrs[subbed]->addr));
+                    ch->socket_send(ch, &ts, sizeof(ts), &(active->connected_users[i]->address));
                 }
-                
             }
+            //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
             
             //TODO: Add a random unique identifier to a say message
             //TODO: Have a list of recent say identifiers

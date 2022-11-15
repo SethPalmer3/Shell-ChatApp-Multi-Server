@@ -70,7 +70,7 @@ void *recv_thread(void *args){
             }break;
             
             default:
-                write(STDERR_FILENO, "Invalid request\n", 17);
+                write(STDERR_FILENO, "Invalid request: ", 17);
                 break;
             }
 

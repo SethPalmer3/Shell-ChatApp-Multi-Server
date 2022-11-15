@@ -98,4 +98,12 @@ int find_channel_server(Server *srvr, char *channel);
 */
 Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in addr);
 
+/**
+ * Fills a text say packet with appropriate data
+ * @param channel the name of the channel
+ * @param username the name of the user sending the message
+ * @param text the actual message
+ * @return a filled text say structure ready to send
+*/
+struct text_say fill_text_say(char *channel, char *username, char *text);
 #endif

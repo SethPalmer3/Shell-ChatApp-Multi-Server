@@ -272,9 +272,9 @@ struct text_error fill_error(char *chnl_name){
 struct sockaddr_in create_sockaddr(char *addr, char *port){
     struct sockaddr_in ret;
     memset(&ret, 0, sizeof(ret));
-    inet_pton(AF_INET, addr, &ret.sin_addr);
-    ret.sin_port = htons((uint16_t)atoi(port));
     ret.sin_family = AF_INET;
+    ret.sin_port = htons((uint16_t)atoi(port));
+    ret.sin_addr.s_addr = inet_addr(addr);
     return ret;
 }
 
@@ -328,4 +328,14 @@ Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in
     }
     return NULL;
     
+}
+
+struct text_say fill_text_say(char *channel, char *username, char *text){
+    struct text_say ts;
+    memset(&ts, 0, sizeof(ts));
+    ts.txt_type = TXT_SAY;
+    strcpy(ts.txt_channel, channel);
+    strcpy(ts.txt_username, username);
+    strcpy(ts.txt_text, text);
+    return ts;
 }
