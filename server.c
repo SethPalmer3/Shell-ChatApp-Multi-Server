@@ -117,7 +117,8 @@ int main(int argc, char **argv){
             if (new_chnl == NULL)
             {
                 //TODO: If the users join channel isn't apart of this servers channel list; Send a join message to all adjacent servers
-                struct request_join_s2s rjs = s2s_fill_join(re_j->req_channel);
+                
+                struct request_join_s2s rjs = s2s_fill_join(re_j->req_channel); // Send new channel to adjacent channels
                 for (int i = 0; i < num_servers; i++)
                 {
                     if(ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr)) <= 0){
@@ -207,10 +208,22 @@ int main(int argc, char **argv){
            free(usr); 
         }break;
         case REQ_SERV_JOIN:{
-            //struct request_join_s2s * rjs = (struct request_join_s2s *)rq;
-            //TODO: If this server recieves a join request form another server and this server has that channel. Do the regular join and don't send another join message.
+            struct request_join_s2s * rjs = (struct request_join_s2s *)rq;
+            Channel *active_ch;
+            if ((active_ch = find_channel(channels, num_chnnls, rjs->req_channel)) != NULL)
+            { // If this server does have this channel
+                Server *srvr_update = find_server_address(cnnct_srvrs, num_servers, client_addr);
+                add_ch_srv(srvr_update, rjs->req_channel);
+                printf("Added %s to an adjacent server\n", rjs->req_channel);
+            }else{ // If this server doesn't already the channel
+                add_chnl(channels, &num_chnnls, rjs->req_channel);
+                for (int i = 0; i < num_servers; i++)
+                {
+                    ch->socket_send(ch, rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr));
+                }
+                
+            }
             
-            //TODO: If the incoming join message from a channel is not apart of this servers channel list, add that channel and forward the join message.
             //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
             //TODO: If a server hasn't sent a resubscription to a channel in two minutes that server must leave the channel in this server.
 

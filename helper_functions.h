@@ -106,4 +106,6 @@ Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in
  * @return a filled text say structure ready to send
 */
 struct text_say fill_text_say(char *channel, char *username, char *text);
+
+
 #endif

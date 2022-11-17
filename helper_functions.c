@@ -238,26 +238,35 @@ Channel *add_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
     return chnl;
 }
 
-Channel *remove_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
-    Channel *chnl;
+void *neat_remove(void **list, int *list_len, void *id, int (*cmp)(void*,void*)){
+    void *ret;
     int move = 0;
     int i;
-    for (i = 0; i < *num_chnls; i++)
+    for (i = 0; i < *list_len; i++)
     {
         if (move)
         {
-            chnls[i-1] = chnls[i];
+            list[i-1] = list[i];
 
-        }else if(strcmp(chnls[i]->chnl_name, chnl_name) == 0){
-            chnl = chnls[i];
+        }else if(cmp(list[i], id)){
+            ret = list[i];
             move = 1;
-            printf("Destroyed channel\n");
         }
         
     }
-    chnls[i] = NULL;
-    *num_chnls -= 1;
-    return chnl;
+    list[i] = NULL;
+    *list_len -= 1;
+    return ret;
+}
+
+int chnl_cmp(void *chnl, void*name){
+    Channel *channel = (Channel *)chnl;
+    char *ch_name = (char *)name;
+    return strcmp(channel->chnl_name, ch_name) == 0;
+}
+
+Channel *remove_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
+    return (Channel *)neat_remove((void**)chnls, num_chnls, chnl_name, chnl_cmp);
 
 }
 

@@ -110,3 +110,7 @@ Channel *create_channel(char *chnl_name){
     strcpy(chnl->chnl_name, chnl_name);
     return chnl;
 }
+
+void add_ch_srv(Server *srvr, char *channel){
+    strcpy(srvr->sub_channels[srvr->num_chnnls++], channel);
+}
