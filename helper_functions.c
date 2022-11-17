@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 void say_text_output(char *channel, char *username, char *text){
     write(STDOUT_FILENO, "[", 1);
@@ -371,4 +372,36 @@ struct request_leave_s2s s2s_fill_leave(char *channel){
     rls.req_type = REQ_SERV_LEAVE;
     strcpy(rls.req_channel, channel);
     return rls;
+}
+
+unsigned long int gen_rand(){
+    srand(time(NULL));
+    return (unsigned long int)rand();
+}
+
+int has_id(unsigned long int ids[], int ids_len, unsigned long int id){
+    for (int i = 0; i < ids_len; i++)
+    {
+        if (ids[i] == id)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int has_channel_servers(Server **srvsr, int len, char *channel){
+    for (int i = 0; i < len; i++)
+    {
+        for (int j = 0; j < srvsr[i]->num_chnnls; j++)
+        {
+            if (strcmp(srvsr[i]->sub_channels[j], channel) == 0)
+            {
+                return 1;
+            }
+            
+        }
+        
+    }
+    return 0;
 }

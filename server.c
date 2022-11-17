@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #define MAX_CONNECTIONS 100
+#define MAX_IDS 1024
 #define PORT 8000
 
 int main(int argc, char **argv){
@@ -24,10 +25,18 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
+    uint16_t my_port = (uint16_t)atoi(argv[2]);
+
     // Get connected servers
-    Server *srvs = (Server *)malloc(sizeof(Server) * (argc-3)/2);
-    Server **cnnct_srvrs = &srvs;
     int num_servers = (argc-3)/2;
+    Server *srvs = (Server *)malloc(sizeof(Server) * num_servers);
+    Server *cnnct_srvrs[num_servers];
+    for (int i = 0; i < num_servers; i++)
+    {
+        cnnct_srvrs[i] = &(srvs[i]);
+    }
+    
+    
     for (int i = 3; i < argc; i+=2) // Set up adjactent servers
     {
         cnnct_srvrs[(i-3)/2]->addr = create_sockaddr(argv[i], argv[i+1]);
@@ -36,6 +45,10 @@ int main(int argc, char **argv){
         cnnct_srvrs[(i-3)/2]->num_chnnls = 1;
     }
     
+    //Recently seen say IDs
+    unsigned long int recent_ids[MAX_IDS];
+    int num_ids = 0;
+
     struct sockaddr_in client_addr;
     unsigned int client_addrlen = sizeof(client_addr);
     Connection_Handler *ch = create_handler();
@@ -51,7 +64,7 @@ int main(int argc, char **argv){
     memset(&client_addr, 0, sizeof(client_addr));
 
 
-    if(!ch->init_socket(ch, argv[1], (uint16_t)atoi(argv[2]))){
+    if(!ch->init_socket(ch, argv[1], my_port)){
         ch->destroy(ch);
         exit(EXIT_FAILURE);
     }
@@ -60,9 +73,10 @@ int main(int argc, char **argv){
 
     while (1)
     {
+        // TODO: add resubscription to channels
         //Receive data from client
         if(ch->socket_recv(ch, receive_line, BUFSIZ, &client_addr, &client_addrlen, MSG_WAITALL) < 0){
-            printf("Error with recieving\n");
+            printf("%d: Error with recieving\n", my_port);
         }
 
         rq = (struct request *)receive_line;
@@ -98,9 +112,13 @@ int main(int argc, char **argv){
                 ch->socket_send(ch, (void*)&ts, sizeof(ts), &(active_ch->connected_users[i]->address));
                 
             }
-            //TODO: Add message forwarding 
+
             User * usr = find_user(all_users, num_users, client_addr, NULL); // Get the username
             struct request_say_s2s rss = s2s_fill_say(re_say->req_channel, usr->username, re_say->req_text); // Fill s2s data
+            unsigned long int tmp_id = gen_rand();
+            rss.id = tmp_id;
+            recent_ids[num_ids++ % MAX_IDS] = tmp_id;
+
             for (int i = 0; i < num_servers; i++)
             {
                 if(find_channel_server(cnnct_srvrs[i], re_say->req_channel) >= 0){
@@ -111,8 +129,9 @@ int main(int argc, char **argv){
         }
         break;
         case REQ_JOIN: { // Join request
-            printf("received a join request\n");
+
             struct request_join *re_j = (struct request_join*)rq;
+            printf("%d: Received a join request to join %s\n", my_port, re_j->req_channel);
             Channel *new_chnl = find_channel(channels, num_chnnls, re_j->req_channel);
             if (new_chnl == NULL)
             {
@@ -122,12 +141,12 @@ int main(int argc, char **argv){
                 for (int i = 0; i < num_servers; i++)
                 {
                     if(ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr)) <= 0){
-                        printf("Could not send user send to server\n");
+                        printf("%d: Could not send user send to server\n", my_port);
                     }
                 }
                 
                 new_chnl = add_chnl(channels, &num_chnnls, re_j->req_channel);
-                printf("Created a new channel %s\n", new_chnl->chnl_name);
+                printf("%d: Created a new channel %s\n", my_port, new_chnl->chnl_name);
             }
             User *usr = find_user(all_users, num_users, client_addr, NULL); // Get user
             new_chnl->add_user(new_chnl, usr); // Add user to channel
@@ -155,7 +174,7 @@ int main(int argc, char **argv){
             if (chnl == NULL)
             {
                 free(who);
-                printf("Not a real channel\n");
+                printf("%d: %s is not a real channel\n", my_port, re_who->req_channel);
                 struct text_error te;
                 memset(&te, 0, sizeof(te));
                 te.txt_type = TXT_ERROR;
@@ -180,7 +199,7 @@ int main(int argc, char **argv){
             if (chnl == NULL)
             {
                 // Send Error report
-                printf("Not a real channel\n");
+                printf("%d: Not a real channel\n", my_port);
                 struct text_error terr = fill_error(req_l->req_channel);
                 ch->socket_send(ch, &terr, sizeof(terr), &client_addr);
                 continue;
@@ -189,15 +208,14 @@ int main(int argc, char **argv){
             User *usr = find_user(all_users, num_users, client_addr, NULL);
             chnl->remove_user(chnl, usr->username);
             if (chnl->num_users == 0)
-            {               
+            {
+                         
                 struct request_leave_s2s rls = s2s_fill_leave(chnl->chnl_name);
                 for (int i = 0; i < num_servers; i++)
                 { // Send leave requests to all adjacent servers
                                  
                     ch->socket_send(ch, &rls, sizeof(rls), &(cnnct_srvrs[i]->addr));
-
                 }
-                
 
                 remove_chnl(channels, &num_chnnls, chnl->chnl_name);
             }
@@ -223,7 +241,7 @@ int main(int argc, char **argv){
             { // If this server does have this channel
                 Server *srvr_update = find_server_address(cnnct_srvrs, num_servers, client_addr);
                 add_ch_srv(srvr_update, rjs->req_channel);
-                printf("Added %s to an adjacent server\n", rjs->req_channel);
+                printf("%d: Added %s to an adjacent server\n", my_port, rjs->req_channel);
             }else{ // If this server doesn't already the channel
                 add_chnl(channels, &num_chnnls, rjs->req_channel);
                 for (int i = 0; i < num_servers; i++)
@@ -241,30 +259,56 @@ int main(int argc, char **argv){
             struct request_leave_s2s *rls = (struct request_leave_s2s*)rq;
             Server *srv = find_server_address(cnnct_srvrs, num_servers, client_addr);
             remove_adj_channel(srv, rls->req_channel);
-            printf("One of my adjacent servers is unsubed to %s", rls->req_channel);
+            printf("%d: One of my adjacent servers is unsubed to %s", my_port, rls->req_channel);
         }break;
         case REQ_SERV_SAY:{
             struct request_say_s2s *sss = (struct request_say_s2s*)rq;
+            if (has_id(recent_ids, num_ids, sss->id))
+            {
+                struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
+                ch->socket_send(ch, &rls, sizeof(rls), &client_addr); // leave the sends channel list
+                printf("%d: Message already received\n", my_port);
+                break; // so nothing else
+            }
+            
             int subbed;
-            struct text_say ts = fill_text_say(sss->req_channel, sss->req_username, sss->req_text);
             Channel *active = find_channel(channels, num_chnnls, sss->req_channel);
+
+            if (active->num_users == 0 && has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel))
+            {// There's no one to forward this message to
+                printf("%d: No server nor channel to send msg\n", my_port);
+                struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
+                ch->socket_send(ch, &rls, sizeof(rls), &client_addr);
+                break;
+            }
+
+            struct text_say ts = fill_text_say(sss->req_channel, sss->req_username, sss->req_text);
+            // Sending to users
             for (int i = 0; i < active->num_users; i++)
+            {
+                ch->socket_send(ch, &ts, sizeof(ts), &(active->connected_users[i]->address));
+            }
+
+            // Sending to other servers
+            struct request_say_s2s rss = s2s_fill_say(sss->req_channel, sss->req_username, sss->req_text);
+            for (int i = 0; i < num_servers; i++)
             {
                 if ((subbed = find_channel_server(cnnct_srvrs[i], sss->req_channel)) >= 0)
                 {
-                    ch->socket_send(ch, &ts, sizeof(ts), &(active->connected_users[i]->address));
+                    ch->socket_send(ch, &rss, sizeof(rss), &(cnnct_srvrs[i]->addr));
                 }
+
             }
+            
+
             //TODO: If this server receives a say message with no other server to forward it to and no users from that channel then respond with a leave message to the sender. (Only if that one server that is the only subscribed server to this channel, send leave)
             
-            //TODO: Add a random unique identifier to a say message
-            //TODO: Have a list of recent say identifiers
             //TODO: If the say message already has a identifier and it's in the list of recent identifiers; Discard the say message and send a leave request to the sender
 
         }break;
 
         default:
-            printf("Not a valid request: %d\n", rq->req_type);
+            printf("%d: Not a valid request: %d\n", my_port, rq->req_type);
             break;
         }
         

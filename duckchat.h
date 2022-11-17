@@ -86,7 +86,7 @@ struct request_say {
 
 struct request_say_s2s {
         request_t req_type;
-        signed long int id;
+        unsigned long int id;
         char req_username[USERNAME_MAX];
         char req_channel[CHANNEL_MAX];
         char req_text[SAY_MAX];

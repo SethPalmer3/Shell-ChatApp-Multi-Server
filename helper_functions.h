@@ -120,4 +120,28 @@ void remove_adj_channel(Server *srvr, char* channel);
  * @return a fully filled leave request
 */
 struct request_leave_s2s s2s_fill_leave(char *channel);
+
+/**
+ * Generates a randomly generated number
+ * @return a random unsigned long integer
+*/
+unsigned long int gen_rand();
+
+/**
+ * Determines if this identifier has already been seen
+ * @param ids the list of already seen ids
+ * @param ids_len the length of the id list
+ * @param id the id to compare against
+ * @return 1 if it is in the list, 0 otherwise
+*/
+int has_id(unsigned long int ids[], int ids_len, unsigned long int id);
+
+/**
+ * Determines if any adjacent servers are subbed to a channel
+ * @param srvrs the list of servers
+ * @param len the length of the server list
+ * @param channel the name of the channel
+ * @return 1 if there was a server thats subbed to the channel, 0 otherwise
+*/
+int has_channel_servers(Server **srvrs, int len, char *channel);
 #endif
