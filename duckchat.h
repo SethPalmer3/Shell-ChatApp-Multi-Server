@@ -73,6 +73,11 @@ struct request_leave {
         char req_channel[CHANNEL_MAX]; 
 } packed;
 
+struct request_leave_s2s {
+        request_t req_type; /* = REQ_SERV_LEAVE */
+        char req_channel[CHANNEL_MAX];
+} packed;
+
 struct request_say {
         request_t req_type; /* = REQ_SAY */
         char req_channel[CHANNEL_MAX]; 

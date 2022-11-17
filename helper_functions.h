@@ -107,5 +107,17 @@ Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in
 */
 struct text_say fill_text_say(char *channel, char *username, char *text);
 
+/**
+ * Removes a channel from an adjacent server
+ * @param srvr the server to remove the channel from
+ * @param channel the channel name
+*/
+void remove_adj_channel(Server *srvr, char* channel);
 
+/**
+ * Fills a server to server leave request with the appropriate data
+ * @param channel name of channel to leave
+ * @return a fully filled leave request
+*/
+struct request_leave_s2s s2s_fill_leave(char *channel);
 #endif

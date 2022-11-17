@@ -189,8 +189,17 @@ int main(int argc, char **argv){
             User *usr = find_user(all_users, num_users, client_addr, NULL);
             chnl->remove_user(chnl, usr->username);
             if (chnl->num_users == 0)
-            {
-               remove_chnl(channels, &num_chnnls, chnl->chnl_name);
+            {               
+                struct request_leave_s2s rls = s2s_fill_leave(chnl->chnl_name);
+                for (int i = 0; i < num_servers; i++)
+                { // Send leave requests to all adjacent servers
+                                 
+                    ch->socket_send(ch, &rls, sizeof(rls), &(cnnct_srvrs[i]->addr));
+
+                }
+                
+
+                remove_chnl(channels, &num_chnnls, chnl->chnl_name);
             }
         }break;
         case REQ_LOGOUT:{
@@ -229,7 +238,10 @@ int main(int argc, char **argv){
 
         }break;
         case REQ_SERV_LEAVE:{
-
+            struct request_leave_s2s *rls = (struct request_leave_s2s*)rq;
+            Server *srv = find_server_address(cnnct_srvrs, num_servers, client_addr);
+            remove_adj_channel(srv, rls->req_channel);
+            printf("One of my adjacent servers is unsubed to %s", rls->req_channel);
         }break;
         case REQ_SERV_SAY:{
             struct request_say_s2s *sss = (struct request_say_s2s*)rq;

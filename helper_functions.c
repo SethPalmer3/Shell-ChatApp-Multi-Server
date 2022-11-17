@@ -238,7 +238,7 @@ Channel *add_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
     return chnl;
 }
 
-void *neat_remove(void **list, int *list_len, void *id, int (*cmp)(void*,void*)){
+void *neat_remove(void *list[], int *list_len, void *id, int (*cmp)(void*,void*)){
     void *ret;
     int move = 0;
     int i;
@@ -347,4 +347,22 @@ struct text_say fill_text_say(char *channel, char *username, char *text){
     strcpy(ts.txt_username, username);
     strcpy(ts.txt_text, text);
     return ts;
+}
+
+int channel_cmp(void *sub_name, void *ch_name){
+    char *subbed_channel = (char*)sub_name; // TODO: Fix this seg fault error(keeps passing a single character)
+    char *channel_name = (char *) ch_name;
+    return strcmp(subbed_channel, channel_name) == 0;
+}
+
+void remove_adj_channel(Server *srvr, char *channel){
+    neat_remove((void **)&(srvr->sub_channels), &srvr->num_chnnls, channel, channel_cmp);
+}
+
+struct request_leave_s2s s2s_fill_leave(char *channel){
+    struct request_leave_s2s rls;
+    memset(&rls, 0, sizeof(rls));
+    rls.req_type = REQ_SERV_LEAVE;
+    strcpy(rls.req_channel, channel);
+    return rls;
 }
