@@ -47,6 +47,7 @@ int main(int argc, char **argv){
     
     //Recently seen say IDs
     unsigned long int recent_ids[MAX_IDS];
+    memset(recent_ids, 0, sizeof(unsigned long int) * MAX_IDS);
     int num_ids = 0;
 
     struct sockaddr_in client_addr;
@@ -274,7 +275,7 @@ int main(int argc, char **argv){
             int subbed;
             Channel *active = find_channel(channels, num_chnnls, sss->req_channel);
 
-            if (active->num_users == 0 && has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel))
+            if (active->num_users == 0 && !has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel))
             {// There's no one to forward this message to
                 printf("%d: No server nor channel to send msg\n", my_port);
                 struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
@@ -290,12 +291,11 @@ int main(int argc, char **argv){
             }
 
             // Sending to other servers
-            struct request_say_s2s rss = s2s_fill_say(sss->req_channel, sss->req_username, sss->req_text);
             for (int i = 0; i < num_servers; i++)
             {
                 if ((subbed = find_channel_server(cnnct_srvrs[i], sss->req_channel)) >= 0)
                 {
-                    ch->socket_send(ch, &rss, sizeof(rss), &(cnnct_srvrs[i]->addr));
+                    ch->socket_send(ch, sss, sizeof(*sss), &(cnnct_srvrs[i]->addr));
                 }
 
             }
