@@ -356,7 +356,13 @@ int channel_cmp(void *sub_name, void *ch_name){
 }
 
 void remove_adj_channel(Server *srvr, char *channel){
-    neat_remove((void **)&(srvr->sub_channels), &srvr->num_chnnls, channel, channel_cmp);
+    void *ptrs[srvr->num_chnnls];
+    for (int i = 0; i < srvr->num_chnnls; i++)
+    {
+        ptrs[i] = &(srvr->sub_channels[i]);
+    }
+
+    neat_remove(ptrs, &srvr->num_chnnls, channel, channel_cmp);
 }
 
 struct request_leave_s2s s2s_fill_leave(char *channel){
