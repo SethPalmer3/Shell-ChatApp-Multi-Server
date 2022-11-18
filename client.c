@@ -259,6 +259,11 @@ int main(int argc, char **argv){
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(*port);
+    if (strcmp(server, "localhost") == 0)
+    {
+        strcpy(server, "127.0.0.1");
+    }
+    
     server_addr.sin_addr.s_addr = inet_addr(server);
 
     struct request_login req_lg;

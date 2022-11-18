@@ -144,4 +144,12 @@ int has_id(unsigned long int ids[], int ids_len, unsigned long int id);
  * @return 1 if there was a server thats subbed to the channel, 0 otherwise
 */
 int has_channel_servers(Server **srvrs, int len, char *channel);
+
+/**
+ * Comparse the address and port of two address
+ * @param a the first address to be compared
+ * @param b the second address to be compared
+ * @return if both address and port match return 1, 0 otherwise
+*/
+int addr_cmp(struct sockaddr_in a, struct sockaddr_in b);
 #endif

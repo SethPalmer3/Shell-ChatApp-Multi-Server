@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#define lclhst "localhost"
+
 
 int init_socket(Connection_Handler* ch, char *addr, uint16_t port){
     Self *s = (Self *)ch->self;
@@ -31,7 +33,13 @@ int init_socket(Connection_Handler* ch, char *addr, uint16_t port){
     {
         s->addr.sin_addr.s_addr = htonl(INADDR_ANY);
     }else{
-        inet_pton(AF_INET, addr, &(s->addr.sin_addr));
+        //inet_pton(AF_INET, addr, &(s->addr.sin_addr));
+        if (strcmp(addr, lclhst) == 0)
+        {
+            strcpy(addr, "127.0.0.1");
+        }
+        s->addr.sin_addr.s_addr = inet_addr(addr);
+        
     }
     
     s->addr.sin_port = htons(port);

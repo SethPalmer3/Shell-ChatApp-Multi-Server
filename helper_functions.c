@@ -318,12 +318,6 @@ int find_channel_server(Server *srvr, char *channel){
     return -1;
 }
 
-/**
- * Comparse the address and port of two address
- * @param a the first address to be compared
- * @param b the second address to be compared
- * @return if both address and port match return 1, 0 otherwise
-*/
 int addr_cmp(struct sockaddr_in a, struct sockaddr_in b){
     return (a.sin_addr.s_addr == b.sin_addr.s_addr) && 
             (a.sin_port == b.sin_port);
@@ -332,7 +326,7 @@ int addr_cmp(struct sockaddr_in a, struct sockaddr_in b){
 Server *find_server_address(Server **srvr_list, int list_len, struct sockaddr_in addr){
     for (int i = 0; i < list_len; i++)
     {
-        if(addr_cmp(srvr_list[i]->addr, addr) == 0){
+        if(addr_cmp(srvr_list[i]->addr, addr)){
             return srvr_list[i];
         }
     }

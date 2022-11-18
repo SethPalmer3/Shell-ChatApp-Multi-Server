@@ -291,6 +291,8 @@ int main(int argc, char **argv){
             }
 
             // Sending to other servers
+            Server *cn = find_server_address(cnnct_srvrs, num_chnnls, client_addr);
+            printf("%d\n", cn->num_chnnls);
             for (int i = 0; i < num_servers; i++)
             {
                 if ((subbed = find_channel_server(cnnct_srvrs[i], sss->req_channel)) >= 0)
