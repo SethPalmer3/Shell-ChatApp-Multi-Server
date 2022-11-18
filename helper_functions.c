@@ -284,6 +284,10 @@ struct sockaddr_in create_sockaddr(char *addr, char *port){
     memset(&ret, 0, sizeof(ret));
     ret.sin_family = AF_INET;
     ret.sin_port = htons((uint16_t)atoi(port));
+    if (strcmp(addr, lclhst) == 0)
+    {
+        strcpy(addr, "127.0.0.1");
+    }
     ret.sin_addr.s_addr = inet_addr(addr);
     return ret;
 }

@@ -6,6 +6,7 @@
 
 #define REQ_SWITCH 100
 #define MAX_JOINED 32
+#define lclhst "localhost"
 
 // Show a say user message to stdout
 void say_text_output(char *channel, char *username, char *text);
