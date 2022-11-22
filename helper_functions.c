@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 
+#define TO_SEC(x) x * 1000000 / CLOCKS_PER_SEC
+
 void say_text_output(char *channel, char *username, char *text){
     write(STDOUT_FILENO, "[", 1);
     write(STDOUT_FILENO, channel, CHANNEL_MAX);
@@ -239,7 +241,7 @@ Channel *add_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
     return chnl;
 }
 
-void *neat_remove(void *list[], int *list_len, void *id, int (*cmp)(void*,void*)){
+void *neat_remove(void *list[], int *list_len, void *id, int (*cmp)(void*,void*), int *pos){
     void *ret;
     int move = 0;
     int i;
@@ -249,7 +251,10 @@ void *neat_remove(void *list[], int *list_len, void *id, int (*cmp)(void*,void*)
         {
             list[i-1] = list[i];
 
-        }else if(cmp(list[i], id)){
+        }else if((pos == NULL || *pos < 0) && cmp(list[i], id)){
+            ret = list[i];
+            move = 1;
+        }else if(pos != NULL && *pos >= 0 && i == *pos){
             ret = list[i];
             move = 1;
         }
@@ -267,7 +272,7 @@ int chnl_cmp(void *chnl, void*name){
 }
 
 Channel *remove_chnl(Channel **chnls, int *num_chnls, char *chnl_name){
-    return (Channel *)neat_remove((void**)chnls, num_chnls, chnl_name, chnl_cmp);
+    return (Channel *)neat_remove((void**)chnls, num_chnls, chnl_name, chnl_cmp, NULL);
 
 }
 
@@ -356,12 +361,16 @@ int channel_cmp(void *sub_name, void *ch_name){
 
 void remove_adj_channel(Server *srvr, char *channel){
     void *ptrs[srvr->num_chnnls];
+    void *c_ptrs[srvr->num_chnnls];
     for (int i = 0; i < srvr->num_chnnls; i++)
     {
         ptrs[i] = &(srvr->sub_channels[i]);
+        c_ptrs[i] = &(srvr->timers[i]);
     }
-
-    neat_remove(ptrs, &srvr->num_chnnls, channel, channel_cmp);
+    int pos = -1;
+    neat_remove(ptrs, &srvr->num_chnnls, channel, channel_cmp, &pos);
+    srvr->num_chnnls++;
+    neat_remove(c_ptrs, &srvr->num_chnnls, NULL, NULL, &pos);
 }
 
 struct request_leave_s2s s2s_fill_leave(char *channel){
@@ -389,17 +398,52 @@ int has_id(unsigned long int ids[], int ids_len, unsigned long int id){
 }
 
 int has_channel_servers(Server **srvsr, int len, char *channel){
+    int ret = 0;
     for (int i = 0; i < len; i++)
     {
         for (int j = 0; j < srvsr[i]->num_chnnls; j++)
         {
             if (strcmp(srvsr[i]->sub_channels[j], channel) == 0)
             {
-                return 1;
+                ret++;
+                break;
             }
             
         }
         
     }
+    return ret;
+}
+
+int has_channel_server(Server* srvr, char *channel){
+    for (int i = 0; i < srvr->num_chnnls; i++)
+    {
+        if (strcmp(srvr->sub_channels[i], channel)==0)
+        {
+            return 1;
+        }
+        
+    }
     return 0;
+}
+
+int channel_elapse(Server *srvr, char *channel){
+    int pos = find_channel_server(srvr, channel);
+    if (pos >= 0)
+    {
+        clock_t diff = clock() - srvr->timers[pos];
+        return TO_SEC(diff);
+    }
+    return -1;
+    
+}
+
+void add_ch_srv(Server *srvr, char *channel){
+    strcpy(srvr->sub_channels[srvr->num_chnnls], channel);
+    srvr->timers[srvr->num_chnnls++] = clock();
+}
+
+int remove_ch_srv(Server *srvr, char *channel){
+    remove_adj_channel(srvr, channel);
+    return 1;
 }

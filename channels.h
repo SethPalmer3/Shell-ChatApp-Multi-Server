@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 
 #define MAX_USERS 32
@@ -25,6 +26,7 @@ typedef struct usr
 typedef struct srv{
     struct sockaddr_in addr;
     char sub_channels[MAX_CHANNELS][CHANNEL_MAX];
+    clock_t timers[MAX_CHANNELS];
     int num_chnnls;
 } Server;
 
@@ -47,19 +49,6 @@ void init_channel(Channel *chnl);
 
 int comp_sockaddr(struct sockaddr_in a, struct sockaddr_in b);
 
-/**
- * Adds a channel name to an adjacent server
- * @param srvr the server to add the channel to
- * @param channel the string name of the channel
-*/
-void add_ch_srv(Server *srvr, char *channel);
 
-/**
- * Removes the channel name from an adjacent server
- * @param srvr the server to remove the channel from
- * @param channel the channel name to be removed
- * @return 1 if succesfully removed channel, 0 otherwise
-*/
-int remove_ch_srv(Server *srvr, char *channel);
 
 #endif

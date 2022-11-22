@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 // Find user with username username in chnl
 // Return NULL if cannot find
@@ -109,8 +110,4 @@ Channel *create_channel(char *chnl_name){
     chnl->num_users = 0;
     strcpy(chnl->chnl_name, chnl_name);
     return chnl;
-}
-
-void add_ch_srv(Server *srvr, char *channel){
-    strcpy(srvr->sub_channels[srvr->num_chnnls++], channel);
 }

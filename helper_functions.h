@@ -138,11 +138,11 @@ unsigned long int gen_rand();
 int has_id(unsigned long int ids[], int ids_len, unsigned long int id);
 
 /**
- * Determines if any adjacent servers are subbed to a channel
+ * Gives the number of servers subsribed to a channe;
  * @param srvrs the list of servers
  * @param len the length of the server list
  * @param channel the name of the channel
- * @return 1 if there was a server thats subbed to the channel, 0 otherwise
+ * @return the number of servers subscribed to this channel
 */
 int has_channel_servers(Server **srvrs, int len, char *channel);
 
@@ -153,4 +153,37 @@ int has_channel_servers(Server **srvrs, int len, char *channel);
  * @return if both address and port match return 1, 0 otherwise
 */
 int addr_cmp(struct sockaddr_in a, struct sockaddr_in b);
+
+/**
+ * Determines if this server has subscribed to a channel
+ * @param srvr the server to check
+ * @param channel name of channel
+ * @return 1 if srvr is subscribed to channel
+*/
+int has_channel_server(Server *srvr, char *channel);
+
+/**
+ * Converts, to seconds, how much time since the last re subscription was made
+ * @param srvr the server to check channels in
+ * @param channel the channel name to check
+ * @return -1 if not subbed to channel, otherwise the number of seconds since last
+*/
+int channel_elapse(Server *srvr, char *channel);
+
+/**
+ * Adds a channel name to an adjacent server
+ * @param srvr the server to add the channel to
+ * @param channel the string name of the channel
+*/
+void add_ch_srv(Server *srvr, char *channel);
+
+/**
+ * Removes the channel name from an adjacent server
+ * @param srvr the server to remove the channel from
+ * @param channel the channel name to be removed
+ * @return 1 if succesfully removed channel, 0 otherwise
+*/
+int remove_ch_srv(Server *srvr, char *channel);
+
+
 #endif

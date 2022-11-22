@@ -10,10 +10,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAX_CONNECTIONS 100
 #define MAX_IDS 1024
-#define PORT 8000
+#define MIN_2 120
+#define MIN_1 60
 
 int main(int argc, char **argv){
     if (argc < 2)
@@ -74,7 +76,22 @@ int main(int argc, char **argv){
 
     while (1)
     {
-        // TODO: add resubscription to channels
+        //Check late timers
+        for (int i = 0; i < num_servers; i++)
+        {
+            for (int j = 0; j < cnnct_srvrs[i]->num_chnnls; j++)
+            {
+                if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_2)
+                {
+                    printf("%d: Timed out channel %s from %d\n", my_port, cnnct_srvrs[i]->sub_channels[j], ntohs(cnnct_srvrs[i]->addr.sin_port));
+                    remove_adj_channel(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]);
+                    
+                }
+                
+            }
+            
+        }
+        
         //Receive data from client
         if(ch->socket_recv(ch, receive_line, BUFSIZ, &client_addr, &client_addrlen, MSG_WAITALL) < 0){
             printf("%d: Error with recieving\n", my_port);
@@ -210,8 +227,8 @@ int main(int argc, char **argv){
             User *usr = find_user(all_users, num_users, client_addr, NULL);
             chnl->remove_user(chnl, usr->username);
             if (chnl->num_users == 0)
-            {
-                         
+            { // Removing a channel
+                printf("%d: Sending leave requests from %s\n", my_port, chnl->chnl_name);     
                 struct request_leave_s2s rls = s2s_fill_leave(chnl->chnl_name);
                 for (int i = 0; i < num_servers; i++)
                 { // Send leave requests to all adjacent servers
@@ -239,11 +256,16 @@ int main(int argc, char **argv){
         case REQ_SERV_JOIN:{
             struct request_join_s2s * rjs = (struct request_join_s2s *)rq;
             Channel *active_ch;
-            
-            // Add channel to corresponding server
             Server *srvr_update = find_server_address(cnnct_srvrs, num_servers, client_addr);
-            add_ch_srv(srvr_update, rjs->req_channel);
-            printf("%d: Added %s to an adjacent server\n", my_port, rjs->req_channel);
+            if (!has_channel_server(srvr_update, rjs->req_channel))
+            { // Add channel to corresponding server
+                add_ch_srv(srvr_update, rjs->req_channel);
+                printf("%d: Added %s to an adjacent server\n", my_port, rjs->req_channel);
+            }else{ // Resubscribe channel
+                printf("%d: Received a resubmission request from %d\n", my_port, ntohs(client_addr.sin_port));
+                int pos = find_channel_server(srvr_update, rjs->req_channel);
+                srvr_update->timers[pos] = clock();
+            }
 
             if ((active_ch = find_channel(channels, num_chnnls, rjs->req_channel)) == NULL){ // If this server doesn't already the channel
                 printf("%d: Subscribed self to %s\n", my_port, rjs->req_channel);
@@ -281,7 +303,7 @@ int main(int argc, char **argv){
             int subbed;
             Channel *active = find_channel(channels, num_chnnls, sss->req_channel);
 
-            if (active->num_users == 0 && !has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel))
+            if (active->num_users == 0 && has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel) <= 1)
             {// There's no one to forward this message to
                 printf("%d: No server nor channel to send msg\n", my_port);
                 struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
@@ -313,6 +335,21 @@ int main(int argc, char **argv){
             break;
         }
         //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
+        struct request_join_s2s rjs;
+        for (int i = 0; i < num_servers; i++)
+        {
+            for (int j = 0; j < cnnct_srvrs[i]->num_chnnls; j++)
+            {
+                if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_1)
+                {
+                    rjs = s2s_fill_join(cnnct_srvrs[i]->sub_channels[j]);
+                    ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr));
+                    cnnct_srvrs[i]->timers[j] = clock();
+                }
+                
+            }
+            
+        }
         
     }
     
