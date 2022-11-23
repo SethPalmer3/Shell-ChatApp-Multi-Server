@@ -26,7 +26,7 @@ typedef struct usr
 typedef struct srv{
     struct sockaddr_in addr;
     char sub_channels[MAX_CHANNELS][CHANNEL_MAX];
-    clock_t timers[MAX_CHANNELS];
+    time_t timers[MAX_CHANNELS];
     int num_chnnls;
 } Server;
 
@@ -34,6 +34,7 @@ typedef struct chnnl{
     char chnl_name[CHANNEL_MAX];
     User *connected_users[MAX_USERS];
     int num_users;
+    time_t tm;
     User *(*find_user)(struct chnnl *chnl, char *username);
     User *(*create_user)(struct chnnl *chnl, char *username, struct sockaddr_in *addr, unsigned int len);
     User *(*remove_user)(struct chnnl *chnl, char *username);

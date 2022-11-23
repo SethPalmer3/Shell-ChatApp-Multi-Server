@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#define TO_SEC(x) x * 1000000 / CLOCKS_PER_SEC
+#define TO_SEC(x) x / CLOCKS_PER_SEC
 
 void say_text_output(char *channel, char *username, char *text){
     write(STDOUT_FILENO, "[", 1);
@@ -424,20 +424,20 @@ int has_channel_server(Server* srvr, char *channel){
     return 0;
 }
 
+
 int channel_elapse(Server *srvr, char *channel){
     int pos = find_channel_server(srvr, channel);
     if (pos >= 0)
     {
-        clock_t diff = clock() - srvr->timers[pos];
-        return TO_SEC(diff);
+        time_t diff = time(NULL) - srvr->timers[pos];
+        return diff;
     }
     return -1;
-    
 }
 
 void add_ch_srv(Server *srvr, char *channel){
     strcpy(srvr->sub_channels[srvr->num_chnnls], channel);
-    srvr->timers[srvr->num_chnnls++] = clock();
+    srvr->timers[srvr->num_chnnls++] = time(NULL);
 }
 
 int remove_ch_srv(Server *srvr, char *channel){

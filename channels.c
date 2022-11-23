@@ -108,6 +108,7 @@ Channel *create_channel(char *chnl_name){
     chnl->find_byaddr = find_byaddr;
     chnl->destroy = destroy;
     chnl->num_users = 0;
+    chnl->tm = time(NULL);
     strcpy(chnl->chnl_name, chnl_name);
     return chnl;
 }

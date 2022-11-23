@@ -266,7 +266,7 @@ int main(int argc, char **argv){
             }else{ // Resubscribe channel
                 printf("%d: Received a resubmission request from %d\n", my_port, ntohs(client_addr.sin_port));
                 int pos = find_channel_server(srvr_update, rjs->req_channel);
-                srvr_update->timers[pos] = clock();
+                srvr_update->timers[pos] = time(NULL);
             }
 
             if ((active_ch = find_channel(channels, num_chnnls, rjs->req_channel)) == NULL){ // If this server doesn't already the channel
@@ -339,18 +339,18 @@ int main(int argc, char **argv){
         //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
         resub:
         struct request_join_s2s rjs;
-        for (int i = 0; i < num_servers; i++)
+        for (int i = 1; i < num_chnnls; i++)
         {
-            for (int j = 1; j < cnnct_srvrs[i]->num_chnnls; j++)
+            if (time(NULL) - channels[i]->tm > MIN_1)
             {
-                if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_1)
+                for (int j = 0; j < num_servers; j++)
                 {
-                    rjs = s2s_fill_join(cnnct_srvrs[i]->sub_channels[j]);
-                    ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[i]->addr));
-                    cnnct_srvrs[i]->timers[j] = clock();
+                    rjs = s2s_fill_join(channels[i]->chnl_name);
+                    ch->socket_send(ch, &rjs, sizeof(rjs), &(cnnct_srvrs[j]->addr));
                 }
-                
+                channels[i]->tm = time(NULL);
             }
+            
             
         }
         
