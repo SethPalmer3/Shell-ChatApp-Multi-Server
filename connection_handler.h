@@ -26,6 +26,8 @@ typedef struct connection_handler
     int (*socket_send)(struct connection_handler*, void *out_message, int out_msglen, struct sockaddr_in *dest_addr);
     int (*socket_recv)(struct connection_handler*, void *buffer, int buff_len, struct sockaddr_in *cli_addr, socklen_t *cli_addrlen, int block_type);
     int (*get_socketfd)(struct connection_handler*);
+    void (*non_block)(struct connection_handler*);
+    void (*block)(struct connection_handler*);
     void (*destroy)(struct connection_handler*cnnct_hndlr);
 } Connection_Handler;
 

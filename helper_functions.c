@@ -251,10 +251,7 @@ void *neat_remove(void *list[], int *list_len, void *id, int (*cmp)(void*,void*)
         {
             list[i-1] = list[i];
 
-        }else if((pos == NULL || *pos < 0) && cmp(list[i], id)){
-            ret = list[i];
-            move = 1;
-        }else if(pos != NULL && *pos >= 0 && i == *pos){
+        }else if((pos == NULL && cmp(list[i], id)) || (pos != NULL && *pos == i)){
             ret = list[i];
             move = 1;
         }

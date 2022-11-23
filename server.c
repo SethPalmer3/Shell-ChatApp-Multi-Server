@@ -76,10 +76,12 @@ int main(int argc, char **argv){
 
     while (1)
     {
+        ch->non_block(ch);
+        //TODO: Add timer interrupts
         //Check late timers
         for (int i = 0; i < num_servers; i++)
         {
-            for (int j = 0; j < cnnct_srvrs[i]->num_chnnls; j++)
+            for (int j = 1; j < cnnct_srvrs[i]->num_chnnls; j++)
             {
                 if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_2)
                 {
@@ -94,7 +96,7 @@ int main(int argc, char **argv){
         
         //Receive data from client
         if(ch->socket_recv(ch, receive_line, BUFSIZ, &client_addr, &client_addrlen, MSG_WAITALL) < 0){
-            printf("%d: Error with recieving\n", my_port);
+            goto resub;
         }
 
         rq = (struct request *)receive_line;
@@ -335,10 +337,11 @@ int main(int argc, char **argv){
             break;
         }
         //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.
+        resub:
         struct request_join_s2s rjs;
         for (int i = 0; i < num_servers; i++)
         {
-            for (int j = 0; j < cnnct_srvrs[i]->num_chnnls; j++)
+            for (int j = 1; j < cnnct_srvrs[i]->num_chnnls; j++)
             {
                 if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_1)
                 {

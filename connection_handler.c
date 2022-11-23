@@ -127,7 +127,17 @@ int get_socketfd(Connection_Handler *ch){
     return s->socket_fd;
 }
 
-Connection_Handler tmp = {NULL, init_socket, socket_listen, socket_accept, socket_connect, socket_send, socket_recv, get_socketfd, destroy};
+void non_block(Connection_Handler *ch){
+    Self *s = (Self *)ch->self;
+    fcntl(s->socket_fd, F_SETFL, FNDELAY);
+}
+
+void block(Connection_Handler *ch){
+    Self *s = (Self *)ch->self;
+    fcntl(s->socket_fd, F_SETFL, FNONBLOCK);
+}
+
+Connection_Handler tmp = {NULL, init_socket, socket_listen, socket_accept, socket_connect, socket_send, socket_recv, get_socketfd, non_block, block, destroy};
 
 Connection_Handler *create_handler(){
     Self *s = (Self*)malloc(sizeof(Self));
