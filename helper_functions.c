@@ -379,7 +379,10 @@ struct request_leave_s2s s2s_fill_leave(char *channel){
 }
 
 unsigned long int gen_rand(){
-    srand(time(NULL));
+    FILE *randFID = fopen("/dev/urandom", "r");
+    unsigned int seed;
+    fread(&seed, sizeof(seed), 1, randFID);
+    srand(seed);
     return (unsigned long int)rand();
 }
 
