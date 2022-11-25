@@ -279,15 +279,13 @@ int main(int argc, char **argv){
                 }
                 
             }
-            
-            //TODO: If a server hasn't sent a resubscription to a channel in two minutes that server must leave the channel in this server.
 
         }break;
         case REQ_SERV_LEAVE:{
             struct request_leave_s2s *rls = (struct request_leave_s2s*)rq;
             Server *srv = find_server_address(cnnct_srvrs, num_servers, client_addr);
             remove_adj_channel(srv, rls->req_channel);
-            printf("%d: One of my adjacent servers is unsubed to %s", my_port, rls->req_channel);
+            printf("%d: One of my adjacent servers is unsubed to %s\n", my_port, rls->req_channel);
         }break;
         case REQ_SERV_SAY:{
             printf("%d: Got message from %d\n", my_port, ntohs(client_addr.sin_port));
