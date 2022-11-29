@@ -28,6 +28,8 @@ typedef struct connection_handler
     int (*get_socketfd)(struct connection_handler*);
     void (*non_block)(struct connection_handler*);
     void (*block)(struct connection_handler*);
+    char *(*get_addr)(struct connection_handler*);
+    uint16_t (*get_port)(struct connection_handler*);
     void (*destroy)(struct connection_handler*cnnct_hndlr);
 } Connection_Handler;
 

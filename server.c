@@ -54,7 +54,7 @@ int main(int argc, char **argv){
 
     struct sockaddr_in client_addr;
     unsigned int client_addrlen = sizeof(client_addr);
-    Connection_Handler *ch = create_handler();
+    Connection_Handler *ch = create_handler(); // Create connection hanlder
     Channel *channels[MAX_USERS];
     channels[0] = create_channel((char*)"Common");
     int num_chnnls = 1;
@@ -77,7 +77,6 @@ int main(int argc, char **argv){
     while (1)
     {
         ch->non_block(ch);
-        //TODO: Add timer interrupts
         //Check late timers
         for (int i = 0; i < num_servers; i++)
         {
@@ -85,7 +84,11 @@ int main(int argc, char **argv){
             {
                 if (channel_elapse(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]) > MIN_2)
                 {
-                    printf("%d: Timed out channel %s from %d\n", my_port, cnnct_srvrs[i]->sub_channels[j], ntohs(cnnct_srvrs[i]->addr.sin_port));
+                    printf("%s:%d Timed out channel %s from %s:%d\n", ch->get_addr(ch), 
+                            my_port, 
+                            cnnct_srvrs[i]->sub_channels[j],
+                            inet_ntoa(cnnct_srvrs[i]->addr.sin_addr), 
+                            ntohs(cnnct_srvrs[i]->addr.sin_port));
                     remove_adj_channel(cnnct_srvrs[i], cnnct_srvrs[i]->sub_channels[j]);
                     
                 }
@@ -150,14 +153,11 @@ int main(int argc, char **argv){
         }
         break;
         case REQ_JOIN: { // Join request
-
             struct request_join *re_j = (struct request_join*)rq;
-            printf("%d: Received a join request to join %s\n", my_port, re_j->req_channel);
+            printf("%s:%d Received a join request to join %s\n", ch->get_addr(ch), my_port, re_j->req_channel);
             Channel *new_chnl = find_channel(channels, num_chnnls, re_j->req_channel);
             if (new_chnl == NULL)
-            {
-                //TODO: If the users join channel isn't apart of this servers channel list; Send a join message to all adjacent servers
-                
+            {                
                 struct request_join_s2s rjs = s2s_fill_join(re_j->req_channel); // Send new channel to adjacent channels
                 for (int i = 0; i < num_servers; i++)
                 {
@@ -167,7 +167,7 @@ int main(int argc, char **argv){
                 }
                 
                 new_chnl = add_chnl(channels, &num_chnnls, re_j->req_channel);
-                printf("%d: Created a new channel %s\n", my_port, new_chnl->chnl_name);
+                printf("%s:%d Created a new channel %s\n", ch->get_addr(ch), my_port, new_chnl->chnl_name);
             }
             User *usr = find_user(all_users, num_users, client_addr, NULL); // Get user
             new_chnl->add_user(new_chnl, usr); // Add user to channel
@@ -195,7 +195,7 @@ int main(int argc, char **argv){
             if (chnl == NULL)
             {
                 free(who);
-                printf("%d: %s is not a real channel\n", my_port, re_who->req_channel);
+                printf("%s:%d \"%s\" is not a real channel\n", ch->get_addr(ch), my_port, re_who->req_channel);
                 struct text_error te;
                 memset(&te, 0, sizeof(te));
                 te.txt_type = TXT_ERROR;
@@ -220,7 +220,7 @@ int main(int argc, char **argv){
             if (chnl == NULL)
             {
                 // Send Error report
-                printf("%d: Not a real channel\n", my_port);
+                printf("%s:%d \"%s\" not a real channel\n", ch->get_addr(ch), my_port, req_l->req_channel);
                 struct text_error terr = fill_error(req_l->req_channel);
                 ch->socket_send(ch, &terr, sizeof(terr), &client_addr);
                 continue;
@@ -230,7 +230,7 @@ int main(int argc, char **argv){
             chnl->remove_user(chnl, usr->username);
             if (chnl->num_users == 0)
             { // Removing a channel
-                printf("%d: Sending leave requests from %s\n", my_port, chnl->chnl_name);     
+                printf("%s:%d leaving \"%s\"\n", ch->get_addr(ch), my_port, chnl->chnl_name);     
                 struct request_leave_s2s rls = s2s_fill_leave(chnl->chnl_name);
                 for (int i = 0; i < num_servers; i++)
                 { // Send leave requests to all adjacent servers
@@ -262,15 +262,15 @@ int main(int argc, char **argv){
             if (!has_channel_server(srvr_update, rjs->req_channel))
             { // Add channel to corresponding server
                 add_ch_srv(srvr_update, rjs->req_channel);
-                printf("%d: Added %s to an adjacent server\n", my_port, rjs->req_channel);
+                printf("%s:%d Added %s to %s:%d\n", ch->get_addr(ch), my_port, rjs->req_channel, inet_ntoa(srvr_update->addr.sin_addr), ntohs(srvr_update->addr.sin_port));
             }else{ // Resubscribe channel
-                printf("%d: Received a resubmission request from %d\n", my_port, ntohs(client_addr.sin_port));
+                printf("%s:%d Received a resubmission request from %s:%d\n", ch->get_addr(ch), my_port, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
                 int pos = find_channel_server(srvr_update, rjs->req_channel);
                 srvr_update->timers[pos] = time(NULL);
             }
 
             if ((active_ch = find_channel(channels, num_chnnls, rjs->req_channel)) == NULL){ // If this server doesn't already the channel
-                printf("%d: Subscribed self to %s\n", my_port, rjs->req_channel);
+                printf("%s:%d Subscribed to %s\n", ch->get_addr(ch), my_port, rjs->req_channel);
                 add_chnl(channels, &num_chnnls, rjs->req_channel);
                 struct request_join_s2s nrjs = s2s_fill_join(rjs->req_channel);
                 for (int i = 0; i < num_servers; i++)
@@ -285,17 +285,17 @@ int main(int argc, char **argv){
             struct request_leave_s2s *rls = (struct request_leave_s2s*)rq;
             Server *srv = find_server_address(cnnct_srvrs, num_servers, client_addr);
             remove_adj_channel(srv, rls->req_channel);
-            printf("%d: One of my adjacent servers is unsubed to %s\n", my_port, rls->req_channel);
+            printf("%s:%d %s:%d has unsubed to \"%s\"\n", ch->get_addr(ch), my_port, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), rls->req_channel);
         }break;
         case REQ_SERV_SAY:{
-            printf("%d: Got message from %d\n", my_port, ntohs(client_addr.sin_port));
+            printf("%s:%d Got message from %s:%d\n", ch->get_addr(ch), my_port, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
             struct request_say_s2s *sss = (struct request_say_s2s*)rq;
             if (has_id(recent_ids, num_ids, sss->id))
             {
                 struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
                 ch->socket_send(ch, &rls, sizeof(rls), &client_addr); // leave the sends channel list
-                printf("%d: Message already received\n", my_port);
+                printf("%s:%d Alredy received message\n", ch->get_addr(ch), my_port);
                 break; // do nothing else
             }
             recent_ids[num_ids++ % MAX_IDS] = sss->id;
@@ -305,7 +305,7 @@ int main(int argc, char **argv){
 
             if (active->num_users == 0 && has_channel_servers(cnnct_srvrs, num_servers, sss->req_channel) <= 1)
             {// There's no one to forward this message to
-                printf("%d: No server nor channel to send msg\n", my_port);
+                printf("%s:%d No server nor channel to send msg\n", ch->get_addr(ch), my_port);
                 struct request_leave_s2s rls = s2s_fill_leave(sss->req_channel);
                 ch->socket_send(ch, &rls, sizeof(rls), &client_addr);
                 break;
@@ -331,7 +331,7 @@ int main(int argc, char **argv){
         }break;
 
         default:
-            printf("%d: Not a valid request: %d\n", my_port, rq->req_type);
+            printf("%s:%d Not a valid request: %d\n", ch->get_addr(ch), my_port, rq->req_type);
             break;
         }
         //TODO: Renew any channel subscriprions by sending a join message to the channels again to the adjacent servers every minute.

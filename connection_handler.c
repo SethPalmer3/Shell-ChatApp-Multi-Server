@@ -137,7 +137,17 @@ void block(Connection_Handler *ch){
     fcntl(s->socket_fd, F_SETFL, FNONBLOCK);
 }
 
-Connection_Handler tmp = {NULL, init_socket, socket_listen, socket_accept, socket_connect, socket_send, socket_recv, get_socketfd, non_block, block, destroy};
+char *get_addr(Connection_Handler *ch){
+    Self *s = (Self *)ch->self;
+    return inet_ntoa(s->addr.sin_addr);
+}
+
+uint16_t get_port(Connection_Handler *ch){
+    Self *s = (Self *)ch->self;
+    return ntohs(s->addr.sin_port); 
+}
+
+Connection_Handler tmp = {NULL, init_socket, socket_listen, socket_accept, socket_connect, socket_send, socket_recv, get_socketfd, non_block, block, get_addr, get_port, destroy};
 
 Connection_Handler *create_handler(){
     Self *s = (Self*)malloc(sizeof(Self));

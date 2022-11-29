@@ -383,6 +383,7 @@ unsigned long int gen_rand(){
     unsigned int seed;
     fread(&seed, sizeof(seed), 1, randFID);
     srand(seed);
+    fclose(randFID);
     return (unsigned long int)rand();
 }
 
