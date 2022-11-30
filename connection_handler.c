@@ -142,7 +142,7 @@ char *get_addr(Connection_Handler *ch){
     return inet_ntoa(s->addr.sin_addr);
 }
 
-uint16_t get_port(Connection_Handler *ch){
+int get_port(Connection_Handler *ch){
     Self *s = (Self *)ch->self;
     return ntohs(s->addr.sin_port); 
 }
